@@ -1,18 +1,24 @@
 <template>
     <ui-page :title="title || page.title" :page="page" :backable="backable" ref="page">
         <div slot="drawer">
-            <ui-appbar title=""></ui-appbar>
+            <div class="header">
+                <img class="logo" src="/static/img/contacts.svg">
+            </div>
+            <!-- <ui-appbar title=""></ui-appbar> -->
             <ui-list @itemClick="toggle()">
                 <ui-list-item title="联系人" to="/">
                     <ui-icon slot="left" value="contacts"/>
                 </ui-list-item>
-                <ui-list-item title="设置" to="/about">
+                <ui-list-item title="vcf 工具" to="/vcf">
+                    <ui-icon slot="left" value="grade"/>
+                </ui-list-item>
+                <!-- <ui-list-item title="设置" to="/about">
                     <ui-icon slot="left" value="settings"/>
                 </ui-list-item>
                 <ui-list-item title="意见反馈" to="/about">
                     <ui-icon slot="left" value="feedback"/>
-                </ui-list-item>
-                <ui-list-item title="帮助" to="/about">
+                </ui-list-item> -->
+                <ui-list-item title="帮助" href="https://project.yunser.com/products/31126fe05c4911e888a50737631f72f2" target="_blank">
                     <ui-icon slot="left" value="help"/>
                 </ui-list-item>
             </ui-list>
@@ -60,30 +66,19 @@
 </script>
 
 <style lang="scss" scoped>
-    .ui-page {
-        position: absolute;
-        top: 0;
-        left: 0;
-        bottom: 0;
-        right: 0;
-    }
-    .page-body {
-        min-height: 500px;
-    }
-    .container-main {
-        padding-top: 16px;
-    }
-    .page-content {
-        position: absolute;
-        top: 0;
-        left: 256px;
-        right: 0;
-        bottom: 0;
-    }
-    .page-container {
-        padding: 16px;
-    }
-    .admin-container {
-        padding: 16px;
-    }
+.header {
+    padding: 40px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+}
+.logo {
+    display: block;
+    width: 80px;
+    margin: 0 auto;
+}
+.ui-position-bottom {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+}
 </style>

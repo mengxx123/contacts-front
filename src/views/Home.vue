@@ -1,18 +1,34 @@
 <template>
     <my-page title="通讯录" :page="page">
-        <ul class="contracts-list" v-if="contacts.length">
-            <li :class="['item', selectedClass(item)]" v-for="item in contacts">
-                <div class="left">
-                    <ui-checkbox class="checkbox" v-model="selected" name="group" :nativeValue="item.id" label="" />
-                    <ui-icon class="icon" value="account_circle" :size="36" />
-                </div>
-                <span class="name">{{ item.name }}</span>
-            </li>
-        </ul>
-        <div class="empty" v-if="!contacts.length">
-            <img class="img" src="/static/img/empty.png">
-            <div class="text">你目前还没有联系人！</div>
-            <a href="#" @click.prevent="toggleNew">添加联系人</a>
+        <a href="javascript:;" v-if="!$store.state.user" @click="login">点击登陆</a>
+        <div class="container" v-else>
+            <ul class="group-list" v-if="contacts.length">
+                <li class="group-item" v-for="group in groups">
+                    <div class="group-header">
+                        <div>
+                        {{ group.letter }}
+                        </div>
+                        <!-- <div>
+                            <span class="group-in" v-if="group.in">收入：{{ group.in }}</span>
+                            <span class="group-in" v-if="group.out">支出：{{ group.out }}</span>
+                        </div> -->
+                    </div>
+                    <ul class="contracts-list">
+                        <li :class="['item', selectedClass(item)]" v-for="item in group.list" @click="viewItem(item)">
+                            <div class="left">
+                                <ui-checkbox class="checkbox" v-model="selected" name="group" :nativeValue="item.id" label="" />
+                                <ui-icon class="icon" value="account_circle" :size="36" />
+                            </div>
+                            <span class="name">{{ item.name }}</span>
+                        </li>
+                    </ul>
+                </li>
+            </ul>
+            <div class="empty" v-if="!contacts.length">
+                <img class="img" src="/static/img/empty.png">
+                <div class="text">你目前还没有联系人！</div>
+                <a href="#" @click.prevent="toggleNew">添加联系人</a>
+            </div>
         </div>
         <ui-float-button class="btn-add" icon="add" secondary @click="toggleNew" />
 
@@ -48,6 +64,16 @@
 </template>
 
 <script>
+    /* eslint-disbale */
+    import oss from '@/util/oss'
+    const pydic = window.pydic
+    let arr = pydic.split(',')
+    let pinyinMap = {}
+    for (let item of arr) {
+        pinyinMap[item[0]] = item.substring(1)
+    }
+    // console.log(pinyinMap)
+
     export default {
         data () {
             return {
@@ -59,26 +85,22 @@
                     phone: ''
                 },
                 contacts: [
-                    {
-                        id: '1',
-                        name: '陈建杭',
-                        email: '1418503601@qq.com',
-                        phone: '15602221234'
-                    },
-                    {
-                        id: '2',
-                        name: '陈建杭',
-                        email: '1418503601@qq.com',
-                        phone: '15602221234'
-                    }
                 ],
+                groups: [],
                 newVisible: false,
                 page: {
                     menu: [
+                        // {
+                        //     type: 'icon',
+                        //     icon: 'apps',
+                        //     href: 'https://tool.yunser.com?utm_source=contacts',
+                        //     target: '_blank',
+                        //     title: '云设应用'
+                        // },
                         {
                             type: 'icon',
                             icon: 'apps',
-                            href: 'https://tool.yunser.com/',
+                            href: 'https://tool.yunser.com?utm_source=contacts',
                             target: '_blank',
                             title: '云设应用'
                         }
@@ -87,9 +109,65 @@
             }
         },
         mounted() {
-            this.contacts = this.$storage.get('data', [])
+            // this.contacts = this.$storage.get('data', [])
+            this.loadData()
         },
         methods: {
+            loadData() {
+                let user = this.$store.state.user
+                if (!user) {
+                    return
+                }
+                let { keyword } = this.$route.query
+                // this.userId = this.$route.params.id
+                this.keyword = keyword
+                // let { date } = this.$route.query
+                this.$http.get(`/life/contacts?keyword=${keyword ? encodeURIComponent(keyword) : ''}&page_size=9999`).then(
+                    response => {
+                        let data = response.data
+                        console.log(data)
+                        this.contacts = data
+                        this.groups = this.group(this.contacts)
+                    },
+                    response => {
+                        console.log('cuol')
+                        if (response.code === 403) {
+                            this.$store.state.user = null
+                        }
+                        this.loading = false
+                    })
+            },
+            group(arr) {
+                let groups = []
+                for (let item of arr) {
+                    let firstChar = item.name.charAt(0)
+                    let letter = pinyinMap[firstChar] ? pinyinMap[firstChar].charAt(0) : '#'
+                    letter = letter.toUpperCase()
+                    // console.log('letter', letter)
+                    let group = groups.find(item => item.letter === letter)
+                    if (group) {
+                        group.list.push({
+                            ...item,
+                        })
+                    } else {
+                        groups.push({
+                            letter,
+                            list: [
+                                item
+                            ]
+                        })
+                    }
+                }
+                groups = groups.sort((a, b) => {
+                    return a.letter.localeCompare(b.letter)
+                })
+                for (let i = 0; i < groups.length; i++) {
+                    groups[i].list = groups[i].list.sort((a, b) => {
+                        return a.name.localeCompare(b.name)
+                    })
+                }
+                return groups
+            },
             selectedClass(item) {
                 if (this.selected.includes(item.id)) {
                     return 'selected'
@@ -97,13 +175,14 @@
                 return ''
             },
             toggleNew() {
-                this.newVisible = !this.newVisible
-                this.contact = {
-                    id: new Date().getTime(),
-                    name: '',
-                    email: '',
-                    phone: ''
-                }
+                // this.newVisible = !this.newVisible
+                // this.contact = {
+                //     id: new Date().getTime(),
+                //     name: '',
+                //     email: '',
+                //     phone: ''
+                // }
+                this.$router.push('/contact/add')
             },
             save() {
                 this.newVisible = false
@@ -115,12 +194,33 @@
                 this.contacts = this.contacts.filter(item => !this.selected.includes(item.id))
                 this.$storage.set('data', this.contacts)
                 this.selected = []
+            },
+            login() {
+                location.href = oss.getOauthUrl()
+            },
+            viewItem(item) {
+                this.$router.push(`/contacts/${item.id}`)
             }
         }
     }
 </script>
 
 <style lang="scss" scoped>
+.group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 24px;
+    background-color: #f1f1f1;
+    .group-in {
+        margin-left: 8px;
+    }
+}
+.container {
+    width: 400px;
+    max-width: 100%;
+    margin: 0 auto;
+}
 .multi-select {
     position: fixed;
     top: 0;
@@ -137,14 +237,15 @@
         align-items: center;
         height: 48px;
         padding: 0 16px;
+        cursor: pointer;
         &:hover {
             background-color: #f1f1f1;
-            .checkbox {
-                display: block;
-            }
-            .icon {
-                display: none;
-            }
+            // .checkbox {
+            //     display: block;
+            // }
+            // .icon {
+            //     display: none;
+            // }
         }
         &.selected {
             background-color: #eee;

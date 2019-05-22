@@ -2,9 +2,11 @@ import Vue from 'vue'
 import Router from 'vue-router'
 
 const Home = resolve => require(['@/views/Home'], resolve)
-const About = resolve => require(['@/views/About'], resolve)
-
+const ContactsDetail = resolve => require(['@/views/ContactsDetail'], resolve)
+const ContactsEdit = resolve => require(['@/views/ContactsEdit'], resolve)
+const Vcf = resolve => require(['@/views/Vcf'], resolve)
 const Error404 = resolve => require(['@/views/error/Error404'], resolve)
+const OauthCallback = resolve => require(['@/views/oauth/Callback'], resolve)
 
 Vue.use(Router)
 
@@ -14,8 +16,24 @@ let routes = [
         component: Home
     },
     {
-        path: '/about',
-        component: About
+        path: '/contacts/:id',
+        component: ContactsDetail
+    },
+    {
+        path: '/contacts/:id/edit',
+        component: ContactsEdit
+    },
+    {
+        path: '/contact/add',
+        component: ContactsEdit
+    },
+    {
+        path: '/vcf',
+        component: Vcf
+    },
+    {
+        path: '/oauth/callback',
+        component: OauthCallback
     },
     {
         path: '*',
